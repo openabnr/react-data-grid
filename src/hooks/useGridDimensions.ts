@@ -13,7 +13,15 @@ export function useGridDimensions(): [
   const [blockSize, setBlockSize] = useState(1);
 
   useLayoutEffect(() => {
-    const { ResizeObserver } = window;
+    let win: (Window & typeof globalThis) | null = null;
+    if (gridRef.current) {
+      const doc = gridRef.current.ownerDocument;
+      const currentWin = doc.defaultView;
+      win = currentWin;
+    }
+    win = win ?? window;
+
+    const { ResizeObserver } = win;
 
     // don't break in Node.js (SSR), jest/jsdom, and browsers that don't support ResizeObserver
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition

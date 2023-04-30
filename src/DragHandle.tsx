@@ -30,6 +30,7 @@ interface Props<R, SR> extends Pick<DataGridProps<R, SR>, 'rows' | 'onRowsChange
   onFill: (event: FillEvent<R>) => R;
   setDragging: (isDragging: boolean) => void;
   setDraggedOverRowIdx: (overRowIdx: number | undefined) => void;
+  win?: Window | undefined; // other popup window
 }
 
 export default function DragHandle<R, SR>({
@@ -41,13 +42,15 @@ export default function DragHandle<R, SR>({
   onRowsChange,
   onFill,
   setDragging,
-  setDraggedOverRowIdx
+  setDraggedOverRowIdx,
+  win
 }: Props<R, SR>) {
   function handleMouseDown(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     if (event.buttons !== 1) return;
     setDragging(true);
-    window.addEventListener('mouseover', onMouseOver);
-    window.addEventListener('mouseup', onMouseUp);
+    const winHandle = win ?? window;
+    winHandle.addEventListener('mouseover', onMouseOver);
+    winHandle.addEventListener('mouseup', onMouseUp);
 
     function onMouseOver(event: MouseEvent) {
       // Trigger onMouseup in edge cases where we release the mouse button but `mouseup` isn't triggered,
@@ -57,8 +60,8 @@ export default function DragHandle<R, SR>({
     }
 
     function onMouseUp() {
-      window.removeEventListener('mouseover', onMouseOver);
-      window.removeEventListener('mouseup', onMouseUp);
+      winHandle.removeEventListener('mouseover', onMouseOver);
+      winHandle.removeEventListener('mouseup', onMouseUp);
       setDragging(false);
       handleDragEnd();
     }

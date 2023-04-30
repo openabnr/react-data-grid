@@ -919,6 +919,15 @@ function DataGrid<R, SR, K extends Key>(
       return;
     }
 
+    let win: Window | null = null;
+    if (gridRef.current) {
+      const doc = gridRef.current.ownerDocument;
+
+      const currentWin = doc.defaultView;
+      win = currentWin;
+    }
+    win = win ?? window;
+
     return (
       <DragHandle
         rows={rawRows}
@@ -930,6 +939,7 @@ function DataGrid<R, SR, K extends Key>(
         onFill={onFill}
         setDragging={setDragging}
         setDraggedOverRowIdx={setDraggedOverRowIdx}
+        win={win}
       />
     );
   }

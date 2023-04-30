@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { css } from '@linaria/core';
 
 import { useLatestFunc } from './hooks';
@@ -45,6 +45,7 @@ export default function EditCell<R, SR>({
   scrollToCell
 }: EditCellProps<R, SR>) {
   const frameRequestRef = useRef<number | undefined>();
+  const bodyRef = useRef<HTMLDivElement | null>(null);
   const commitOnOutsideClick = column.editorOptions?.commitOnOutsideClick !== false;
 
   // We need to prevent the `useEffect` from cleaning up between re-renders,
@@ -54,11 +55,27 @@ export default function EditCell<R, SR>({
     onClose(true);
   });
 
+  const getWin = useCallback(() => {
+    let win: Window | null = null;
+    if (bodyRef.current) {
+      const doc = bodyRef.current.ownerDocument;
+      const currentWin = doc.defaultView;
+      win = currentWin;
+    }
+    return win ?? window;
+  }, []);
+
+  const cancelFrameRequest = useCallback(() => {
+    const win = getWin();
+    win.cancelAnimationFrame(frameRequestRef.current!);
+  }, [getWin]);
+
   useEffect(() => {
     if (!commitOnOutsideClick) return;
 
+    const win = getWin();
     function onWindowCaptureMouseDown() {
-      frameRequestRef.current = requestAnimationFrame(commitOnOutsideMouseDown);
+      frameRequestRef.current = win.requestAnimationFrame(commitOnOutsideMouseDown);
     }
 
     addEventListener('mousedown', onWindowCaptureMouseDown, { capture: true });
@@ -67,11 +84,7 @@ export default function EditCell<R, SR>({
       removeEventListener('mousedown', onWindowCaptureMouseDown, { capture: true });
       cancelFrameRequest();
     };
-  }, [commitOnOutsideClick, commitOnOutsideMouseDown]);
-
-  function cancelFrameRequest() {
-    cancelAnimationFrame(frameRequestRef.current!);
-  }
+  }, [cancelFrameRequest, commitOnOutsideClick, commitOnOutsideMouseDown, getWin]);
 
   function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if (event.key === 'Escape') {
@@ -109,6 +122,7 @@ export default function EditCell<R, SR>({
   return (
     <div
       role="gridcell"
+      ref={bodyRef}
       aria-colindex={column.idx + 1} // aria-colindex is 1-based
       aria-colspan={colSpan}
       aria-selected
