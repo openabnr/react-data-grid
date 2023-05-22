@@ -87,6 +87,7 @@ export interface DataGridHandle {
   scrollToColumn: (colIdx: number) => void;
   scrollToRow: (rowIdx: number) => void;
   selectCell: (position: Position, enableEditor?: Maybe<boolean>) => void;
+  deselectCell: () => void;
 }
 
 type SharedDivProps = Pick<
@@ -440,7 +441,8 @@ function DataGrid<R, SR, K extends Key>(
         behavior: 'smooth'
       });
     },
-    selectCell
+    selectCell,
+    deselectCell
   }));
 
   /**
@@ -718,6 +720,10 @@ function DataGrid<R, SR, K extends Key>(
       isCellWithinViewportBounds(position) &&
       isSelectedCellEditable({ columns, rows, selectedPosition: position, isGroupRow })
     );
+  }
+
+  function deselectCell(): void {
+    setSelectedPosition(initialPosition);
   }
 
   function selectCell(position: Position, enableEditor?: Maybe<boolean>): void {

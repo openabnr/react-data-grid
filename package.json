@@ -1,6 +1,6 @@
 {
   "name": "@openabnr/react-data-grid",
-  "version": "7.0.0-abnr.12",
+  "version": "7.0.0-abnr.13",
   "license": "MIT",
   "description": "Feature-rich and customizable data grid React component",
   "keywords": [
@@ -109,5 +109,10 @@
   "peerDependencies": {
     "react": "^16.14 || ^17.0 || ^18.0",
     "react-dom": "^16.14 || ^17.0 || ^18.0"
-  }
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not op_mini all"
+  ]
 }
