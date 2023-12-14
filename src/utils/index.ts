@@ -1,12 +1,14 @@
-import type { CalculatedColumn } from '../types';
+import type { CalculatedColumn, CalculatedColumnOrColumnGroup } from '../types';
 
 export * from './colSpanUtils';
 export * from './domUtils';
+export * from './eventUtils';
 export * from './keyboardUtils';
+export * from './renderMeasuringCells';
 export * from './selectedCellUtils';
 export * from './styleUtils';
 
-export const { min, max, round, floor, sign, abs, ceil } = Math;
+export const { min, max, floor, sign, abs } = Math;
 
 export function assertIsValidKeyGetter<R, K extends React.Key>(
   keyGetter: unknown
@@ -28,4 +30,11 @@ export function clampColumnWidth<R, SR>(
   }
 
   return width;
+}
+
+export function getHeaderCellRowSpan<R, SR>(
+  column: CalculatedColumnOrColumnGroup<R, SR>,
+  rowIdx: number
+) {
+  return column.parent === undefined ? rowIdx : column.level - column.parent.level;
 }

@@ -1,24 +1,24 @@
-import { memo } from 'react';
-import clsx from 'clsx';
+import { memo, useId } from 'react';
 import { css } from '@linaria/core';
+import clsx from 'clsx';
 
-import HeaderCell from './HeaderCell';
-import type { CalculatedColumn, Direction } from './types';
-import { getColSpan, getRowStyle } from './utils';
+import { getColSpan } from './utils';
+import type { CalculatedColumn, Direction, Position } from './types';
 import type { DataGridProps } from './DataGrid';
-import { cell, cellFrozen, rowSelectedClassname } from './style';
+import HeaderCell from './HeaderCell';
+import { cell, cellFrozen } from './style/cell';
+import { rowSelectedClassname } from './style/row';
 
 type SharedDataGridProps<R, SR, K extends React.Key> = Pick<
   DataGridProps<R, SR, K>,
-  'sortColumns' | 'onSortColumnsChange'
+  'sortColumns' | 'onSortColumnsChange' | 'onColumnsReorder'
 >;
 
 export interface HeaderRowProps<R, SR, K extends React.Key> extends SharedDataGridProps<R, SR, K> {
+  rowIdx: number;
   columns: readonly CalculatedColumn<R, SR>[];
-  allRowsSelected: boolean;
-  onAllRowsSelectionChange: (checked: boolean) => void;
-  onColumnResize: (column: CalculatedColumn<R, SR>, width: number | 'auto') => void;
-  selectCell: (columnIdx: number) => void;
+  onColumnResize: (column: CalculatedColumn<R, SR>, width: number | 'max-content') => void;
+  selectCell: (position: Position) => void;
   lastFrozenColumnIndex: number;
   selectedCellIdx: number | undefined;
   shouldFocusGrid: boolean;
@@ -26,30 +26,31 @@ export interface HeaderRowProps<R, SR, K extends React.Key> extends SharedDataGr
 }
 
 const headerRow = css`
-  display: contents;
-  line-height: var(--rdg-header-row-height);
-  background-color: var(--rdg-header-background-color);
-  font-weight: bold;
+  @layer rdg.HeaderRow {
+    display: contents;
+    line-height: var(--rdg-header-row-height);
+    background-color: var(--rdg-header-background-color);
+    font-weight: bold;
 
-  > .${cell} {
-    /* Should have a higher value than 1 to show up above frozen cells */
-    z-index: 2;
-    position: sticky;
-    inset-block-start: 0;
-  }
+    & > .${cell} {
+      /* Should have a higher value than 1 to show up above regular cells and the focus sink */
+      z-index: 2;
+      position: sticky;
+    }
 
-  > .${cellFrozen} {
-    z-index: 3;
+    & > .${cellFrozen} {
+      z-index: 3;
+    }
   }
 `;
 
-const headerRowClassname = `rdg-header-row ${headerRow}`;
+export const headerRowClassname = `rdg-header-row ${headerRow}`;
 
 function HeaderRow<R, SR, K extends React.Key>({
+  rowIdx,
   columns,
-  allRowsSelected,
-  onAllRowsSelectionChange,
   onColumnResize,
+  onColumnsReorder,
   sortColumns,
   onSortColumnsChange,
   lastFrozenColumnIndex,
@@ -58,6 +59,8 @@ function HeaderRow<R, SR, K extends React.Key>({
   shouldFocusGrid,
   direction
 }: HeaderRowProps<R, SR, K>) {
+  const dragDropKey = useId();
+
   const cells = [];
   for (let index = 0; index < columns.length; index++) {
     const column = columns[index];
@@ -71,15 +74,16 @@ function HeaderRow<R, SR, K extends React.Key>({
         key={column.key}
         column={column}
         colSpan={colSpan}
+        rowIdx={rowIdx}
         isCellSelected={selectedCellIdx === column.idx}
         onColumnResize={onColumnResize}
-        allRowsSelected={allRowsSelected}
-        onAllRowsSelectionChange={onAllRowsSelectionChange}
+        onColumnsReorder={onColumnsReorder}
         onSortColumnsChange={onSortColumnsChange}
         sortColumns={sortColumns}
         selectCell={selectCell}
         shouldFocusGrid={shouldFocusGrid && index === 0}
         direction={direction}
+        dragDropKey={dragDropKey}
       />
     );
   }
@@ -87,11 +91,10 @@ function HeaderRow<R, SR, K extends React.Key>({
   return (
     <div
       role="row"
-      aria-rowindex={1} // aria-rowindex is 1 based
+      aria-rowindex={rowIdx} // aria-rowindex is 1 based
       className={clsx(headerRowClassname, {
         [rowSelectedClassname]: selectedCellIdx === -1
       })}
-      style={getRowStyle(1)}
     >
       {cells}
     </div>

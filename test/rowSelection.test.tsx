@@ -1,10 +1,10 @@
-import { StrictMode, useState } from 'react';
-import { render, within, screen } from '@testing-library/react';
+import { useState } from 'react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import DataGrid, { SelectColumn } from '../src';
 import type { Column } from '../src';
-import { getCellsAtRowIndex, getRows } from './utils';
+import { getCellsAtRowIndex, getRows, render } from './utils';
 
 interface Row {
   id: number;
@@ -25,7 +25,7 @@ function rowKeyGetter(row: Row) {
 }
 
 function RowSelectionTest({ initialRows }: { initialRows: readonly Row[] }) {
-  const [selectedRows, setSelectedRows] = useState<ReadonlySet<number>>(new Set());
+  const [selectedRows, setSelectedRows] = useState((): ReadonlySet<number> => new Set());
 
   return (
     <DataGrid
@@ -39,11 +39,7 @@ function RowSelectionTest({ initialRows }: { initialRows: readonly Row[] }) {
 }
 
 function setup(initialRows = defaultRows) {
-  render(
-    <StrictMode>
-      <RowSelectionTest initialRows={initialRows} />
-    </StrictMode>
-  );
+  render(<RowSelectionTest initialRows={initialRows} />);
 }
 
 function testSelection(rowIdx: number, isSelected: boolean) {
@@ -51,7 +47,7 @@ function testSelection(rowIdx: number, isSelected: boolean) {
 }
 
 async function toggleSelection(rowIdx: number, shift = false) {
-  const element = within(getCellsAtRowIndex(rowIdx)[0]).getByLabelText('Select');
+  const element = within(getCellsAtRowIndex(rowIdx)[0]).getByRole('checkbox', { name: 'Select' });
   const user = userEvent.setup();
   if (shift) await user.keyboard('{Shift>}');
   await user.click(element);
@@ -85,7 +81,7 @@ test('toggle selection using keyboard', async () => {
 
 test('select/deselect all rows when header checkbox is clicked', async () => {
   setup();
-  const headerCheckbox = screen.getByLabelText('Select All');
+  const headerCheckbox = screen.getByRole('checkbox', { name: 'Select All' });
   expect(headerCheckbox).not.toBeChecked();
   await userEvent.click(headerCheckbox);
   testSelection(0, true);
@@ -106,37 +102,33 @@ test('select/deselect all rows when header checkbox is clicked', async () => {
 
 test('header checkbox is not checked when there are no rows', () => {
   setup([]);
-  expect(screen.getByLabelText('Select All')).not.toBeChecked();
+  expect(screen.getByRole('checkbox', { name: 'Select All' })).not.toBeChecked();
 });
 
 test('header checkbox is not necessarily checked when selectedRows.size === rows.length', () => {
   render(
-    <StrictMode>
-      <DataGrid
-        rowKeyGetter={rowKeyGetter}
-        columns={columns}
-        rows={defaultRows}
-        selectedRows={new Set([1, 2, 4])}
-      />
-    </StrictMode>
+    <DataGrid
+      rowKeyGetter={rowKeyGetter}
+      columns={columns}
+      rows={defaultRows}
+      selectedRows={new Set([1, 2, 4])}
+    />
   );
 
-  expect(screen.getByLabelText('Select All')).not.toBeChecked();
+  expect(screen.getByRole('checkbox', { name: 'Select All' })).not.toBeChecked();
 });
 
 test('header checkbox is not necessarily checked when selectedRows.size > rows.length', () => {
   render(
-    <StrictMode>
-      <DataGrid
-        rowKeyGetter={rowKeyGetter}
-        columns={columns}
-        rows={defaultRows}
-        selectedRows={new Set([1, 2, 4, 5])}
-      />
-    </StrictMode>
+    <DataGrid
+      rowKeyGetter={rowKeyGetter}
+      columns={columns}
+      rows={defaultRows}
+      selectedRows={new Set([1, 2, 4, 5])}
+    />
   );
 
-  expect(screen.getByLabelText('Select All')).not.toBeChecked();
+  expect(screen.getByRole('checkbox', { name: 'Select All' })).not.toBeChecked();
 });
 
 test('extra keys are preserved when updating the selectedRows Set', async () => {
@@ -162,13 +154,9 @@ test('extra keys are preserved when updating the selectedRows Set', async () => 
     );
   }
 
-  render(
-    <StrictMode>
-      <Test />
-    </StrictMode>
-  );
+  render(<Test />);
 
-  const headerCheckbox = screen.getByLabelText('Select All');
+  const headerCheckbox = screen.getByRole('checkbox', { name: 'Select All' });
 
   await toggleSelection(1);
   expect(set).toStrictEqual(new Set([...initialSet, 2]));

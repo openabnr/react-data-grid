@@ -1,22 +1,20 @@
-import { useState, useMemo, useCallback } from 'react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import { useCallback, useMemo, useState } from 'react';
 
-import { DraggableHeaderRenderer } from './components/HeaderRenderers';
 import DataGrid from '../../src';
-import type { Column, HeaderRendererProps, SortColumn } from '../../src';
+import type { Column, SortColumn } from '../../src';
 import type { Props } from './types';
 
 interface Row {
-  id: number;
-  task: string;
-  complete: number;
-  priority: string;
-  issueType: string;
+  readonly id: number;
+  readonly task: string;
+  readonly complete: number;
+  readonly priority: string;
+  readonly issueType: string;
 }
 
 function createRows(): Row[] {
-  const rows = [];
+  const rows: Row[] = [];
+
   for (let i = 1; i < 500; i++) {
     rows.push({
       id: i,
@@ -30,72 +28,55 @@ function createRows(): Row[] {
   return rows;
 }
 
-function createColumns(): Column<Row>[] {
-  return [
-    {
-      key: 'id',
-      name: 'ID',
-      width: 80
-    },
-    {
-      key: 'task',
-      name: 'Title',
-      resizable: true,
-      sortable: true
-    },
-    {
-      key: 'priority',
-      name: 'Priority',
-      resizable: true,
-      sortable: true
-    },
-    {
-      key: 'issueType',
-      name: 'Issue Type',
-      resizable: true,
-      sortable: true
-    },
-    {
-      key: 'complete',
-      name: '% Complete',
-      resizable: true,
-      sortable: true
-    }
-  ];
-}
+const columns: Column<Row>[] = [
+  {
+    key: 'id',
+    name: 'ID',
+    width: 80
+  },
+  {
+    key: 'task',
+    name: 'Title',
+    resizable: true,
+    sortable: true,
+    draggable: true
+  },
+  {
+    key: 'priority',
+    name: 'Priority',
+    resizable: true,
+    sortable: true,
+    draggable: true
+  },
+  {
+    key: 'issueType',
+    name: 'Issue Type',
+    resizable: true,
+    sortable: true,
+    draggable: true
+  },
+  {
+    key: 'complete',
+    name: '% Complete',
+    resizable: true,
+    sortable: true,
+    draggable: true
+  }
+];
 
 export default function ColumnsReordering({ direction }: Props) {
   const [rows] = useState(createRows);
-  const [columns, setColumns] = useState(createColumns);
+  const [columnsOrder, setColumnsOrder] = useState((): readonly number[] =>
+    columns.map((_, index) => index)
+  );
   const [sortColumns, setSortColumns] = useState<readonly SortColumn[]>([]);
   const onSortColumnsChange = useCallback((sortColumns: SortColumn[]) => {
     setSortColumns(sortColumns.slice(-1));
   }, []);
 
-  const draggableColumns = useMemo(() => {
-    function HeaderRenderer(props: HeaderRendererProps<Row>) {
-      return <DraggableHeaderRenderer {...props} onColumnsReorder={handleColumnsReorder} />;
-    }
-
-    function handleColumnsReorder(sourceKey: string, targetKey: string) {
-      const sourceColumnIndex = columns.findIndex((c) => c.key === sourceKey);
-      const targetColumnIndex = columns.findIndex((c) => c.key === targetKey);
-      const reorderedColumns = [...columns];
-
-      reorderedColumns.splice(
-        targetColumnIndex,
-        0,
-        reorderedColumns.splice(sourceColumnIndex, 1)[0]
-      );
-
-      setColumns(reorderedColumns);
-    }
-
-    return columns.map((c) => {
-      if (c.key === 'id') return c;
-      return { ...c, headerRenderer: HeaderRenderer };
-    });
-  }, [columns]);
+  const reorderedColumns = useMemo(() => {
+    return columnsOrder.map((index) => columns[index]);
+  }, [columnsOrder]);
 
   const sortedRows = useMemo((): readonly Row[] => {
     if (sortColumns.length === 0) return rows;
@@ -117,15 +98,30 @@ export default function ColumnsReordering({ direction }: Props) {
     return direction === 'DESC' ? sortedRows.reverse() : sortedRows;
   }, [rows, sortColumns]);
 
+  function onColumnsReorder(sourceKey: string, targetKey: string) {
+    setColumnsOrder((columnsOrder) => {
+      const sourceColumnOrderIndex = columnsOrder.findIndex(
+        (index) => columns[index].key === sourceKey
+      )!;
+      const targetColumnOrderIndex = columnsOrder.findIndex(
+        (index) => columns[index].key === targetKey
+      )!;
+      const sourceColumnOrder = columnsOrder[sourceColumnOrderIndex];
+      const newColumnsOrder = columnsOrder.toSpliced(sourceColumnOrderIndex, 1);
+      newColumnsOrder.splice(targetColumnOrderIndex, 0, sourceColumnOrder);
+      return newColumnsOrder;
+    });
+  }
+
   return (
-    <DndProvider backend={HTML5Backend}>
-      <DataGrid
-        columns={draggableColumns}
-        rows={sortedRows}
-        sortColumns={sortColumns}
-        onSortColumnsChange={onSortColumnsChange}
-        direction={direction}
-      />
-    </DndProvider>
+    <DataGrid
+      columns={reorderedColumns}
+      rows={sortedRows}
+      sortColumns={sortColumns}
+      onSortColumnsChange={onSortColumnsChange}
+      direction={direction}
+      defaultColumnOptions={{ width: '1fr' }}
+      onColumnsReorder={onColumnsReorder}
+    />
   );
 }

@@ -1,9 +1,10 @@
+import { useState } from 'react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { getHeaderCells } from './utils';
-import type { Column, SortColumn } from '../src/types';
-import { StrictMode, useState } from 'react';
+
 import DataGrid from '../src';
-import { render, screen } from '@testing-library/react';
+import type { Column, SortColumn } from '../src/types';
+import { getHeaderCells, render } from './utils';
 
 const columns: readonly Column<unknown>[] = [
   { key: 'colA', name: 'colA' },
@@ -30,16 +31,12 @@ function TestGrid() {
 }
 
 function setup() {
-  render(
-    <StrictMode>
-      <TestGrid />
-    </StrictMode>
-  );
+  render(<TestGrid />);
 }
 
 function testSortColumns(expectedValue: readonly SortColumn[]) {
-  expect(JSON.parse(screen.getByTestId('sortColumnsValue').textContent!)).toStrictEqual(
-    expectedValue
+  expect(screen.getByTestId('sortColumnsValue', { suggest: false })).toHaveTextContent(
+    JSON.stringify(expectedValue)
   );
 }
 

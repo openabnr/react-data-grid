@@ -1,6 +1,8 @@
 import { fireEvent } from '@testing-library/react';
+
 import type { Column } from '../../src';
-import { setup, getHeaderCells, getGrid } from '../utils';
+import { resizeHandleClassname } from '../../src/HeaderCell';
+import { getGrid, getHeaderCells, setup } from '../utils';
 
 const pointerId = 1;
 
@@ -37,17 +39,22 @@ function resize<K extends keyof DOMRect>({
   clientXEnd,
   rect
 }: ResizeEvent<K>) {
+  const resizeHandle = column.querySelector(`.${resizeHandleClassname}`);
+  if (resizeHandle === null) return;
+
   const original = column.getBoundingClientRect.bind(column);
   column.getBoundingClientRect = () => ({
     ...original(),
     ...rect
   });
+  // eslint-disable-next-line testing-library/prefer-user-event
   fireEvent.pointerDown(
-    column,
+    resizeHandle,
     new PointerEvent('pointerdown', { pointerId, clientX: clientXStart })
   );
-  fireEvent.pointerMove(column, new PointerEvent('pointermove', { clientX: clientXEnd }));
-  fireEvent.lostPointerCapture(column, new PointerEvent('lostpointercapture', {}));
+  // eslint-disable-next-line testing-library/prefer-user-event
+  fireEvent.pointerMove(resizeHandle, new PointerEvent('pointermove', { clientX: clientXEnd }));
+  fireEvent.lostPointerCapture(resizeHandle, new PointerEvent('lostpointercapture', {}));
 }
 
 const columns: readonly Column<Row>[] = [
@@ -74,15 +81,7 @@ test('should not resize column if resizable is not specified', () => {
   expect(getGrid()).toHaveStyle({ gridTemplateColumns: '100px 200px' });
 });
 
-test('should not resize column if cursor offset is not within the allowed range', () => {
-  setup({ columns, rows: [] });
-  const [, col2] = getHeaderCells();
-  expect(getGrid()).toHaveStyle({ gridTemplateColumns: '100px 200px' });
-  resize({ column: col2, clientXStart: 288, clientXEnd: 250, rect: { right: 300, left: 100 } });
-  expect(getGrid()).toHaveStyle({ gridTemplateColumns: '100px 200px' });
-});
-
-test('should resize column if cursor offset is within the allowed range', () => {
+test('should resize column when dragging the handle', () => {
   setup({ columns, rows: [] });
   const [, col2] = getHeaderCells();
   expect(getGrid()).toHaveStyle({ gridTemplateColumns: '100px 200px' });
