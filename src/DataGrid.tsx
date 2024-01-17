@@ -269,6 +269,7 @@ function DataGrid<R, SR, K extends Key>(
   const prevSelectedPosition = useRef(selectedPosition);
   const latestDraggedOverRowIdx = useRef(draggedOverRowIdx);
   const lastSelectedRowIdx = useRef(-1);
+  const lastUnSelectedRowIdx = useRef(-1);
   const rowRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -505,8 +506,20 @@ function DataGrid<R, SR, K extends Key>(
           newSelectedRows.add(rowKeyGetter(row));
         }
       }
+      lastUnSelectedRowIdx.current = -1;
     } else {
       newSelectedRows.delete(rowKey);
+      const previousRowIdx = lastUnSelectedRowIdx.current;
+      const rowIdx = rows.indexOf(row);
+      lastUnSelectedRowIdx.current = rowIdx;
+      if (isShiftClick && previousRowIdx !== -1 && previousRowIdx !== rowIdx) {
+        const step = sign(rowIdx - previousRowIdx);
+        for (let i = previousRowIdx + step; i !== rowIdx; i += step) {
+          const row = rows[i];
+          if (isGroupRow(row)) continue;
+          newSelectedRows.delete(rowKeyGetter(row));
+        }
+      }
       lastSelectedRowIdx.current = -1;
     }
 
