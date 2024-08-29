@@ -556,9 +556,11 @@ function DataGrid<R, SR, K extends Key>(
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    if (!(event.target instanceof Element)) return;
-    const isCellEvent = event.target.closest('.rdg-cell') !== null;
-    const isRowEvent = hasGroups && event.target === rowRef.current;
+    //if (!(event.target instanceof Element)) return;
+    const target = event.target as Element;
+
+    const isCellEvent = target.closest('.rdg-cell') !== null;
+    const isRowEvent = hasGroups && target === rowRef.current;
     if (!isCellEvent && !isRowEvent) return;
 
     const { key, keyCode } = event;
@@ -903,6 +905,14 @@ function DataGrid<R, SR, K extends Key>(
     });
 
     selectCell(nextSelectedCellPosition);
+    // change row event!
+    const row = rows[nextSelectedCellPosition.rowIdx];
+    if (isSelectable && row && !isGroupRow(row)) {
+      assertIsValidKeyGetter<R, K>(rowKeyGetter);
+      //selectRow({ row, checked: true, isShiftClick: false });
+      const rowKey = rowKeyGetter(row);
+      onSelectedRowsChange?.(new Set<K>([rowKey]));
+    }
   }
 
   function getDraggedOverCellIdx(currentRowIdx: number): number | undefined {
