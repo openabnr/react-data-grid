@@ -911,7 +911,7 @@ function DataGrid<R, SR, K extends Key>(
       assertIsValidKeyGetter<R, K>(rowKeyGetter);
       //selectRow({ row, checked: true, isShiftClick: false });
       const rowKey = rowKeyGetter(row);
-      onSelectedRowsChange?.(new Set<K>([rowKey]));
+      onSelectedRowsChange(new Set<K>([rowKey]));
     }
   }
 
